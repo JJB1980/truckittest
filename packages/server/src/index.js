@@ -56,16 +56,16 @@ app.get("/api/autocomplete", (req, res) => {
   for (const category in WORD_LIST) {
     for (const word of WORD_LIST[category]) {
       if (word.startsWith(query.toLowerCase().trim())) {
-        categories.push(category);
-        words.push(word.charAt(0).toUpperCase() + word.slice(1));
-        if (categories.length >= 5) break;
+        words.push(
+          `${word.charAt(0).toUpperCase() + word.slice(1)} is a ${category}`,
+        );
+        if (words.length >= 5) break;
       }
     }
-    if (categories.length >= 5) break;
+    if (words.length >= 5) break;
   }
 
   res.json({
-    categories,
     words,
     message: words.length ? `Success` : `No category found for '${query}'`,
   });

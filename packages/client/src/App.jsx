@@ -14,7 +14,6 @@ async function fetchCategories(text) {
 
 export default function App() {
   const [text, setText] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
   const [words, setWords] = useState([]);
   const [message, setMessage] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,23 +22,25 @@ export default function App() {
   const handleChange = useCallback((e) => {
     const value = e.target.value;
     setText(value);
-    setSuggestions([]);
+    setWords([]);
 
     clearTimeout(debounceRef.current);
 
-    if (value.length < 3) return;
+    if (value.length < 3) {
+      setMessage("");
+      setWords([]);
+      return;
+    }
 
     if (!value.trim()) return;
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const { categories, words, message } = await fetchCategories(value);
-        setSuggestions(categories);
+        const { words, message } = await fetchCategories(value);
         setWords(words);
         setMessage(message);
       } catch {
-        setSuggestions([]);
         setWords([]);
         setMessage("");
       } finally {
@@ -50,7 +51,7 @@ export default function App() {
 
   const applySuggestion = useCallback((completion) => {
     setText(completion + " ");
-    setSuggestions([]);
+    setWords([]);
   }, []);
 
   return (
@@ -66,16 +67,16 @@ export default function App() {
         {loading && <span className="loading">…</span>}
       </div>
       {message !== "Success" && <p className="message">{message}</p>}
-      {suggestions?.length > 0 && (
+      {words?.length > 0 && (
         <ul className="suggestions">
-          {suggestions.map((s, i) => (
+          {words.map((s, i) => (
             <li key={i}>
               <button
                 className="invisible-btn"
                 onClick={() => applySuggestion(words[i])}
                 tabIndex={2 + i}
               >
-                {words[i]} is a {s}
+                {s}
               </button>
             </li>
           ))}
