@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=packages/server\" \"npm run dev --workspace=packages/client\"",
     "build": "npm run build --workspace=packages/client",
-    "start": "npm run start --workspace=packages/server"
+    "start": "npm run start --workspace=packages/server",
+    "test": "concurrently \"npm test --workspace=packages/server\" \"npm test --workspace=packages/client\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
