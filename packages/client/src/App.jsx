@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 
 async function fetchCategories(text) {
-  const res = await fetch("/api/autocomplete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
+  const res = await fetch(
+    `/api/autocomplete?query=${encodeURIComponent(text)}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    },
+  );
   if (!res.ok) throw new Error("Request failed");
   return res.json();
 }
@@ -55,11 +57,10 @@ export default function App() {
     <div className="container">
       <h1>Autocomplete</h1>
       <div className="input-wrapper">
-        <textarea
+        <input
           value={text}
           onChange={handleChange}
           placeholder="Start typing..."
-          rows={4}
           tabIndex={1}
         />
         {loading && <span className="loading">…</span>}

@@ -33,7 +33,7 @@ h1 {
   position: relative;
 }
 
-textarea {
+input {
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 1rem;
@@ -46,7 +46,7 @@ textarea {
   transition: border-color 0.15s;
 }
 
-textarea:focus {
+input:focus {
   border-color: #6366f1;
 }
 
