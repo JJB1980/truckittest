@@ -2,6 +2,7 @@ import { render, screen, act, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import App from "../App";
 
+// Server returns { categories, words, message }
 function mockFetch(payload, ok = true) {
   return vi.fn().mockResolvedValue({
     ok,
@@ -9,7 +10,7 @@ function mockFetch(payload, ok = true) {
   });
 }
 
-// Trigger input change, advance past debounce, drain microtasks — all inside act
+// Fire a change event, advance past the 200ms debounce, drain microtasks
 async function typeAndSettle(textarea, value) {
   fireEvent.change(textarea, { target: { value } });
   await act(async () => {
@@ -34,21 +35,21 @@ describe("App", () => {
   });
 
   it("does not fetch when input is shorter than 3 characters", async () => {
-    global.fetch = mockFetch({ completions: [], words: [], message: "" });
+    global.fetch = mockFetch({ categories: [], words: [], message: "" });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "ab");
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("does not fetch when input is empty", async () => {
-    global.fetch = mockFetch({ completions: [], words: [], message: "" });
+    global.fetch = mockFetch({ categories: [], words: [], message: "" });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "");
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("fetches after debounce when input is 3+ characters", async () => {
-    global.fetch = mockFetch({ completions: ["fruit"], words: ["apple"], message: "Success" });
+    global.fetch = mockFetch({ categories: ["fruit"], words: ["Apple"], message: "Success" });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "app");
     expect(global.fetch).toHaveBeenCalledOnce();
@@ -63,42 +64,42 @@ describe("App", () => {
 
   it("shows suggestions returned from the API", async () => {
     global.fetch = mockFetch({
-      completions: ["fruit", "animal"],
-      words: ["apple", "ant"],
+      categories: ["fruit", "animal"],
+      words: ["Apple", "Ant"],
       message: "Success",
     });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "app");
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(2);
-    expect(items[0].textContent.replace(/\s+/g, " ").trim()).toBe("Apple is a fruit");
-    expect(items[1].textContent.replace(/\s+/g, " ").trim()).toBe("Ant is a animal");
+    expect(items[0].textContent.trim()).toBe("Apple is a fruit");
+    expect(items[1].textContent.trim()).toBe("Ant is a animal");
   });
 
   it("does not render the message paragraph when message is 'Success'", async () => {
-    global.fetch = mockFetch({ completions: ["fruit"], words: ["apple"], message: "Success" });
+    global.fetch = mockFetch({ categories: ["fruit"], words: ["Apple"], message: "Success" });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "app");
     expect(screen.queryByText("Success")).not.toBeInTheDocument();
   });
 
   it("shows message when no suggestions are found", async () => {
-    global.fetch = mockFetch({ completions: [], words: [], message: "No suggestions" });
+    global.fetch = mockFetch({ categories: [], words: [], message: "No suggestions" });
     render(<App />);
     await typeAndSettle(screen.getByPlaceholderText(/start typing/i), "xyz");
     expect(screen.getByText("No suggestions")).toBeInTheDocument();
   });
 
   it("clicking a suggestion updates the textarea and hides the list", async () => {
-    global.fetch = mockFetch({ completions: ["fruit"], words: ["apple"], message: "Success" });
+    global.fetch = mockFetch({ categories: ["fruit"], words: ["Apple"], message: "Success" });
     render(<App />);
     const textarea = screen.getByPlaceholderText(/start typing/i);
     await typeAndSettle(textarea, "app");
-    const item = screen.getByRole("listitem");
 
-    await act(async () => { fireEvent.click(item); });
+    const btn = screen.getByRole("button", { name: /apple is a fruit/i });
+    await act(async () => { fireEvent.click(btn); });
 
-    expect(textarea).toHaveValue("apple ");
+    expect(textarea).toHaveValue("Apple ");
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
@@ -118,14 +119,12 @@ describe("App", () => {
     render(<App />);
     fireEvent.change(screen.getByPlaceholderText(/start typing/i), { target: { value: "app" } });
 
-    // Advance past the debounce so the callback fires and sets loading=true,
-    // but the fetch Promise is still pending so loading stays true
     await act(async () => { vi.advanceTimersByTime(250); });
 
     expect(screen.getByText("…")).toBeInTheDocument();
 
     await act(async () => {
-      resolveFetch({ ok: true, json: async () => ({ completions: [], words: [], message: "" }) });
+      resolveFetch({ ok: true, json: async () => ({ categories: [], words: [], message: "" }) });
       await vi.runAllTimersAsync();
     });
 
@@ -133,11 +132,10 @@ describe("App", () => {
   });
 
   it("debounces: sends only one request after rapid input changes", async () => {
-    global.fetch = mockFetch({ completions: [], words: [], message: "" });
+    global.fetch = mockFetch({ categories: [], words: [], message: "" });
     render(<App />);
     const textarea = screen.getByPlaceholderText(/start typing/i);
 
-    // Fire several changes quickly — each resets the debounce timer
     fireEvent.change(textarea, { target: { value: "a" } });
     fireEvent.change(textarea, { target: { value: "ap" } });
     fireEvent.change(textarea, { target: { value: "app" } });
