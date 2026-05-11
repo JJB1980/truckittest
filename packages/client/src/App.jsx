@@ -55,11 +55,10 @@ export default function App() {
     <div className="container">
       <h1>Autocomplete</h1>
       <div className="input-wrapper">
-        <textarea
+        <input
           value={text}
           onChange={handleChange}
           placeholder="Start typing..."
-          rows={4}
           tabIndex={1}
         />
         {loading && <span className="loading">…</span>}
