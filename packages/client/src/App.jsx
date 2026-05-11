@@ -1,46 +1,43 @@
 import { useState, useCallback, useRef } from "react";
 
 async function fetchCategories(text) {
-  const res = await fetch(
-    `/api/autocomplete?query=${encodeURIComponent(text)}`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+  const res = await fetch("/api/autocomplete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
   if (!res.ok) throw new Error("Request failed");
   return res.json();
 }
 
 export default function App() {
   const [text, setText] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [words, setWords] = useState([]);
-  const [message, setMessage] = useState([]);
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef(null);
 
   const handleChange = useCallback((e) => {
     const value = e.target.value;
     setText(value);
-    setWords([]);
+    setSuggestions([]);
 
     clearTimeout(debounceRef.current);
 
-    if (value.length < 3) {
-      setMessage("");
-      setWords([]);
-      return;
-    }
+    if (value.length < 3) return;
 
     if (!value.trim()) return;
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const { words, message } = await fetchCategories(value);
+        const { categories, words, message } = await fetchCategories(value);
+        setSuggestions(categories);
         setWords(words);
         setMessage(message);
       } catch {
+        setSuggestions([]);
         setWords([]);
         setMessage("");
       } finally {
@@ -51,32 +48,33 @@ export default function App() {
 
   const applySuggestion = useCallback((completion) => {
     setText(completion + " ");
-    setWords([]);
+    setSuggestions([]);
   }, []);
 
   return (
     <div className="container">
       <h1>Autocomplete</h1>
       <div className="input-wrapper">
-        <input
+        <textarea
           value={text}
           onChange={handleChange}
           placeholder="Start typing..."
+          rows={4}
           tabIndex={1}
         />
         {loading && <span className="loading">…</span>}
       </div>
       {message !== "Success" && <p className="message">{message}</p>}
-      {words?.length > 0 && (
+      {suggestions?.length > 0 && (
         <ul className="suggestions">
-          {words.map((s, i) => (
+          {suggestions.map((s, i) => (
             <li key={i}>
               <button
                 className="invisible-btn"
                 onClick={() => applySuggestion(words[i])}
                 tabIndex={2 + i}
               >
-                {s}
+                {words[i]} is a {s}
               </button>
             </li>
           ))}

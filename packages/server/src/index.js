@@ -44,30 +44,30 @@ const WORD_LIST = {
   ],
 };
 
-app.get("/api/autocomplete", (req, res) => {
-  const { query } = req.query;
+app.post("/api/autocomplete", (req, res) => {
+  const { text } = req.body;
 
-  if (typeof query !== "string") {
-    return res.status(400).json({ error: "query must be a string" });
+  if (typeof text !== "string") {
+    return res.status(400).json({ error: "text must be a string" });
   }
 
   const words = [];
   const categories = [];
   for (const category in WORD_LIST) {
     for (const word of WORD_LIST[category]) {
-      if (word.startsWith(query.toLowerCase().trim())) {
-        words.push(
-          `${word.charAt(0).toUpperCase() + word.slice(1)} is a ${category}`,
-        );
-        if (words.length >= 5) break;
+      if (word.startsWith(text.toLowerCase().trim())) {
+        categories.push(category);
+        words.push(word.charAt(0).toUpperCase() + word.slice(1));
+        if (categories.length >= 5) break;
       }
     }
-    if (words.length >= 5) break;
+    if (categories.length >= 5) break;
   }
 
   res.json({
+    categories,
     words,
-    message: words.length ? `Success` : `No category found for '${query}'`,
+    message: words.length ? "Success" : "No suggestions",
   });
 });
 
